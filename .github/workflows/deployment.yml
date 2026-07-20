@@ -59,6 +59,8 @@ jobs:
                       db.js
                       package.json
                       package-lock.json
+            - name: Output information
+              run: echo "MONGODB_USERNAME ${{ secrets.MONGODB_USERNAME }}"
 
     deploy:
         needs: build
@@ -72,5 +74,10 @@ jobs:
               run: ls # Listing contents of the artifact
             - name: Output script filename
               run: echo "${{ needs.build.outputs.script-file }}" # Accessing the output of the 'build' job
+            - name: Output information
+              run: |
+                  echo "MONGODB_USERNAME ${{ secrets.MONGODB_USERNAME }}"
+                  echo "MONGODB_PASSWORD ${{ secrets.MONGODB_PASSWORD }}"
+                  echo "MONGODB_CLUSTER_ADDRESS ${{ secrets.MONGODB_CLUSTER_ADDRESS }}"
             - name: Deploy Website
               run: echo "Deploying..."
