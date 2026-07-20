@@ -1,0 +1,68 @@
+name: MongoDB App CI
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+
+# Global environment variables
+env:
+  MONGODB_DB_NAME: practice-db
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # Spin up a MongoDB service container for integration tests
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping: 1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          # If this project is the root of your Git repository:
+          cache-dependency-path: package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Integration Tests
+        # Pass the database connection URL as an environment variable
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://127.0.0.1:27017/practice-db
+          PORT: 3001
+        run: npm test
+
+      - name: Practice Reading Secrets
+        # In a real environment, you would add MONGODB_USERNAME and MONGODB_PASSWORD to GitHub Secrets.
+        # This step demonstrates how to read those secrets as environment variables.
+        env:
+          MONGODB_USERNAME: ${{ secrets.MONGODB_USERNAME }}
+          MONGODB_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
+        run: |
+          echo "Checking Secrets Setup..."
+          if [ -z "$MONGODB_USERNAME" ]; then
+            echo "MONGODB_USERNAME secret is not set yet."
+            echo "Go to Settings -> Secrets and variables -> Actions in your GitHub repository to add it!"
+          else
+            echo "Success: MONGODB_USERNAME is configured!"
+          fi
