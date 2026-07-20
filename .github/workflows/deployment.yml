@@ -26,6 +26,11 @@ jobs:
               run: npm ci
             - name: Run test
               run: npm test
+            - name: Verify Server and DB Health
+              run: |
+                  node server.js &
+                  sleep 5
+                  curl --fail http://localhost:3000/health
     build:
         needs: test
         runs-on: ubuntu-latest
