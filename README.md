@@ -7,7 +7,8 @@ This is a brand new, lightweight Node.js Express application connected to MongoD
 - `server.js` - Express API server with endpoints for `/health`, `GET /products`, and `POST /products`.
 - `db.js` - MongoDB connection setup. It supports reading connection settings dynamically from environment variables.
 - `server.test.js` - Integration tests verifying the API against a real database.
-- `.github/workflows/ci.yml` - GitHub Actions workflow demonstrating MongoDB service containers, environment variables, and repository secrets.
+- `.github/workflows/ci.yml` - CI workflow demonstrating MongoDB service containers.
+- `.github/workflows/deployment.yml` - Deployment workflow demonstrating testing against MongoDB Atlas (via secrets), local server verify health checks, and build artifact publishing.
 
 ---
 
@@ -74,12 +75,28 @@ We pass the connection URI directly to the test job using the `env` block in the
 To simulate connecting to an external database like MongoDB Atlas:
 1. Go to your GitHub repository.
 2. Navigate to **Settings** -> **Secrets and variables** -> **Actions**.
-3. Create two secrets:
+3. Create three secrets:
    - `MONGODB_USERNAME`
    - `MONGODB_PASSWORD`
-4. The workflow will automatically inject them during the run:
+   - `MONGODB_CLUSTER_ADDRESS`
+4. The workflows will automatically inject them during the run:
    ```yaml
    env:
      MONGODB_USERNAME: ${{ secrets.MONGODB_USERNAME }}
      MONGODB_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
+     MONGODB_CLUSTER_ADDRESS: ${{ secrets.MONGODB_CLUSTER_ADDRESS }}
    ```
+
+---
+
+## Deployment Health Verification
+
+Inside [.github/workflows/deployment.yml](file:///.github/workflows/deployment.yml), we also run a step to verify the server and database connection health before compiling build artifacts:
+```yaml
+            - name: Verify Server and DB Health
+              run: |
+                  node server.js &
+                  sleep 5
+                  curl --fail http://localhost:3000/health
+```
+This starts the backend Express server in the background, waits 5 seconds for the database connection (using the Atlas secrets) to establish, and runs a `curl` call against the `/health` check route. If the database cannot connect or the server fails, the workflow immediately halts and fails.
