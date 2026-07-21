@@ -1,84 +1,91 @@
 name: Deploy Website
 on:
-    push:
-        branches:
-            - main
+  push:
+    branches:
+      - main
 env:
-    MONGODB_DB_NAME: practice-db
+  MONGODB_DB_NAME: practice-db
 
 jobs:
-    test:
-        environment: testing
-        env:
-            MONGODB_USERNAME: ${{ secrets.MONGODB_USERNAME }}
-            MONGODB_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
-            MONGODB_CLUSTER_ADDRESS: ${{ secrets.MONGODB_CLUSTER_ADDRESS }}
-            PORT: 3000
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
-            - name: Cach dependencies
-              uses: actions/cache@v4
-              with:
-                  path: ~/.npm
-                  key: deps-node-modules-${{ hashFiles('**/package-lock.json') }}
-            - name: Install dependencies
-              run: npm ci
-            - name: Run test
-              run: npm test
-            - name: Verify Server and DB Health
-              run: |
-                  node server.js &
-                  sleep 5
-                  curl --fail http://localhost:3000/health
-    build:
-        needs: test
-        runs-on: ubuntu-latest
-        outputs: # Outputs defined in a build job
-            script-file: ${{ steps.publish.outputs.script-file }} # Accessing the output of the 'publish' step
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
-            - name: Cach dependencies
-              uses: actions/cache@v4
-              with:
-                  path: ~/.npm
-                  key: deps-node-modules-${{ hashFiles('**/package-lock.json') }}
-            - name: Install dependencies
-              run: npm ci
-            - name: Publish Js filename
-              id: publish
-              run: find public/*.js -type f -execdir echo 'script-file={}' >> $GITHUB_OUTPUT ';' # Appending the output to the $GITHUB_OUTPUT environment variable, this allows us to access the output of this step in other steps
-            - name: Upload artitacts
-              uses: actions/upload-artifact@v4 # Uploading Build files as artifact
-              with: # Configuration for uploading artifacts
-                  name: dist-files # Name of the artifact
-                  path: |
-                      public
-                      server.js
-                      db.js
-                      package.json
-                      package-lock.json
-            - name: Output information
-              run: echo "MONGODB_USERNAME ${{ secrets.MONGODB_USERNAME }}"
+  test:
+    environment: testing
+    env:
+      MONGODB_USERNAME: ${{ secrets.MONGODB_USERNAME }}
+      MONGODB_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
+      MONGODB_CLUSTER_ADDRESS: ${{ secrets.MONGODB_CLUSTER_ADDRESS }}
+      PORT: 3000
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Cach dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: deps-node-modules-${{ hashFiles('**/package-lock.json') }}
+      - name: Install dependencies
+        run: npm ci
+      - name: Run test
+        id: run-tests
+        run: npm test
+      - name: Verify Server and DB Health
+        run: |
+          node server.js &
+          sleep 5
+          curl --fail http://localhost:3000/health
+      - name: Upload test report
+        if: steps.run-tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4 # Uploading Build files as artifact
+        with: # Configuration for uploading artifacts
+          name: test-report # Name of the artifact
+          path: test-report.json # Path to the artifact
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    outputs: # Outputs defined in a build job
+      script-file: ${{ steps.publish.outputs.script-file }} # Accessing the output of the 'publish' step
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Cach dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: deps-node-modules-${{ hashFiles('**/package-lock.json') }}
+      - name: Install dependencies
+        run: npm ci
+      - name: Publish Js filename
+        id: publish
+        run: find public/*.js -type f -execdir echo 'script-file={}' >> $GITHUB_OUTPUT ';' # Appending the output to the $GITHUB_OUTPUT environment variable, this allows us to access the output of this step in other steps
+      - name: Upload artitacts
+        uses: actions/upload-artifact@v4 # Uploading Build files as artifact
+        with: # Configuration for uploading artifacts
+          name: dist-files # Name of the artifact
+          path: |
+            public
+            server.js
+            db.js
+            package.json
+            package-lock.json
+      - name: Output information
+        run: echo "MONGODB_USERNAME ${{ secrets.MONGODB_USERNAME }}"
 
-    deploy:
-        needs: build
-        runs-on: ubuntu-latest
-        steps:
-            - name: Get Build artifacts
-              uses: actions/download-artifact@v4
-              with:
-                  name: dist-files # Name of the artifact
-            - name: Output contents
-              run: ls # Listing contents of the artifact
-            - name: Output script filename
-              run: echo "${{ needs.build.outputs.script-file }}" # Accessing the output of the 'build' job
-            - name: Output information
-              run: |
-                  echo "MONGODB_USERNAME ${{ secrets.MONGODB_USERNAME }}"
-                  echo "MONGODB_PASSWORD ${{ secrets.MONGODB_PASSWORD }}"
-                  echo "MONGODB_CLUSTER_ADDRESS ${{ secrets.MONGODB_CLUSTER_ADDRESS }}"
-            - name: Deploy Website
-              run: echo "Deploying..."
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-files # Name of the artifact
+      - name: Output contents
+        run: ls # Listing contents of the artifact
+      - name: Output script filename
+        run: echo "${{ needs.build.outputs.script-file }}" # Accessing the output of the 'build' job
+      - name: Output information
+        run: |
+          echo "MONGODB_USERNAME ${{ secrets.MONGODB_USERNAME }}"
+          echo "MONGODB_PASSWORD ${{ secrets.MONGODB_PASSWORD }}"
+          echo "MONGODB_CLUSTER_ADDRESS ${{ secrets.MONGODB_CLUSTER_ADDRESS }}"
+      - name: Deploy Website
+        run: echo "Deploying..."
