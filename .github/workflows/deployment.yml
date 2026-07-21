@@ -34,7 +34,7 @@ jobs:
           sleep 5
           curl --fail http://localhost:3000/health
       - name: Upload test report
-        if: steps.run-tests.outcome == 'failure'
+        if: failure() && steps.run-tests.outcome == 'failure'
         uses: actions/upload-artifact@v4 # Uploading Build files as artifact
         with: # Configuration for uploading artifacts
           name: test-report # Name of the artifact
