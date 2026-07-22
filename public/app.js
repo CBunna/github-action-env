@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     activePort.textContent = window.location.port || '80';
 
     // 1. Check Database Health
-    async functio checkHealth() {
+    async function checkHealth() {
         try {
             const response = await fetch('/health');
             const data = await response.json();
