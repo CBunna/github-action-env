@@ -41,6 +41,7 @@ jobs:
         with: # Configuration for uploading artifacts
           name: test-report # Name of the artifact
           path: test-report.json # Path to the artifact
+          if-no-files-found: warn # Don't fail this step if the report wasn't generated
   build:
     needs: test
     runs-on: ubuntu-latest
@@ -98,6 +99,7 @@ jobs:
     steps:
       - name: Download test report
         uses: actions/download-artifact@v4
+        continue-on-error: true # No report exists if the job failed before tests ran (e.g. lint failure)
         with:
           name: test-report # Name of the artifact
       - name: Output contents
