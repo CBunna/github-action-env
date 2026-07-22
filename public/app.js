@@ -11,11 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
     activePort.textContent = window.location.port || '80';
 
     // 1. Check Database Health
-    async function checkHealth() {
+    async functio checkHealth() {
         try {
             const response = await fetch('/health');
             const data = await response.json();
-            
+
             if (response.ok && data.status === 'UP') {
                 statusIndicator.className = 'status-indicator connected';
                 statusText.textContent = 'Database: Connected';
@@ -34,13 +34,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Fetch and Render Products
     async function loadProducts() {
         productsGrid.innerHTML = '<div class="loading-state">Loading products from database...</div>';
-        
+
         try {
             const response = await fetch('/products');
             if (!response.ok) throw new Error('Failed to fetch products');
-            
+
             const products = await response.json();
-            
+
             if (products.length === 0) {
                 productsGrid.innerHTML = `
                     <div class="empty-state">
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             productsGrid.innerHTML = '';
             products.forEach(product => {
-                const dateStr = product.createdAt 
+                const dateStr = product.createdAt
                     ? new Date(product.createdAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })
                     : 'N/A';
 
@@ -80,10 +80,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Handle Product Form Submission
     productForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const nameInput = document.getElementById('name');
         const priceInput = document.getElementById('price');
-        
+
         const name = nameInput.value.trim();
         const price = parseFloat(priceInput.value);
 
@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Clear form inputs
             nameInput.value = '';
             priceInput.value = '';
-            
+
             // Reload list and check connection status
             await checkHealth();
             await loadProducts();
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Helper: Escape HTML to prevent XSS
     function escapeHTML(str) {
-        return str.replace(/[&<>'"]/g, 
+        return str.replace(/[&<>'"]/g,
             tag => ({
                 '&': '&amp;',
                 '<': '&lt;',
