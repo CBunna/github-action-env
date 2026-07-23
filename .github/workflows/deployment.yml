@@ -51,11 +51,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Cach dependencies
+        id: cache
         uses: actions/cache@v4
         with:
           path: ~/.npm
           key: deps-node-modules-${{ hashFiles('**/package-lock.json') }}
       - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
       - name: Publish Js filename
         id: publish
@@ -70,7 +72,6 @@ jobs:
             db.js
             package.json
             package-lock.json
-
 
   deploy:
     needs: build
