@@ -15,6 +15,7 @@ jobs:
               with:
                   node-version: ${{ matrix.node-version }}
             - name: Cach dependencies
+              id: cache
               uses: actions/cache@v4
               with:
                   path: ~/.npm
