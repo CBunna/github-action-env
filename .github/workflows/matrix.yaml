@@ -14,7 +14,24 @@ jobs:
               uses: actions/setup-node@v4
               with:
                   node-version: ${{ matrix.node-version }}
+            - name: Cach dependencies
+              uses: actions/cache@v4
+              with:
+                  path: ~/.npm
+                  key: deps-node-modules-${{ hashFiles('**/package-lock.json') }}
             - name: Install dependencies
+              if: steps.cache.outputs.cache-hit != 'true'
               run: npm ci
-            - name: Build project
-              run: npm run build
+            - name: Publish Js filename
+              id: publish
+              run: find public/*.js -type f -execdir echo 'script-file={}' >> $GITHUB_OUTPUT ';' # Appending the output to the $GITHUB_OUTPUT environment variable, this allows us to access the output of this step in other steps
+            - name: Upload artitacts
+              uses: actions/upload-artifact@v4 # Uploading Build files as artifact
+              with: # Configuration for uploading artifacts
+                  name: dist-files # Name of the artifact
+                  path: |
+                      public
+                      server.js
+                      db.js
+                      package.json
+                      package-lock.json
