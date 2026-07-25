@@ -104,7 +104,7 @@ jobs:
                   # This tells the build action where to find the source code.
                   context: .
                   # This tells the build action where to find the Dockerfile.
-                  file: ./backend/Dockerfile
+                  file: ./Dockerfile
                   push: true
                   tags: ${{ steps.meta.outputs.tags }}
                   labels: ${{ steps.meta.outputs.labels }}
