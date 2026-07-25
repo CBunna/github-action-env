@@ -97,3 +97,36 @@ jobs:
                   images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
                   tags: type=sha, prefix=
                       type=raw,value={{date +%Y%m%d}}
+
+            - name: Build and push Docker image
+              uses: docker/build-push-action@v5
+              with:
+                  # This tells the build action where to find the source code.
+                  context: .
+                  # This tells the build action where to find the Dockerfile.
+                  file: ./backend/Dockerfile
+                  push: true
+                  tags: ${{ steps.meta.outputs.tags }}
+                  labels: ${{ steps.meta.outputs.labels }}
+
+    # Stage 3: Continue Deployment
+
+    deploy:
+        needs: build-and-push
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        runs-on: ubuntu-latest
+        environment: production
+
+        steps:
+            - name: Deploy to Target Cloud Platform
+              run: |
+                  echo "Deploying image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image_tag }}"
+                  # Insert target platform deployment command here (e.g., AWS ECS / Cloud Run / Render / Fly.io)
+                  # Make sure runtime env vars are passed:
+                  # MONGODB_USERNAME, MONGODB_PASSWORD, MONGODB_CLUSTER_ADDRESS, MONGODB_DB_NAME, PORT=3000
+
+            - name: Smoke Check Health Endpoint
+              run: |
+                  echo "Verifying application status..."
+                  # Replace APP_URL with your actual staging/prod URL
+                  # curl --retry 5 --retry-delay 5 --fail https://your-app.com/health
