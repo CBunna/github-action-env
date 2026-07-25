@@ -1,0 +1,18 @@
+services:
+  app:
+    build: .
+    container_name: "app-practice"
+    ports:
+      - "3000:3000"
+    environment:
+      MONGODB_URI: "mongodb://mongo:27017/practice-db"
+    depends_on:
+      - mongo
+  mongo:
+    restart: always
+    image: mongo:latest
+    container_name: "mongodb-practice"
+    ports:
+      - "27017:27017"
+    volumes:
+      - "./data:/data/db"

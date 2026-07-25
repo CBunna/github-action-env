@@ -16,14 +16,4 @@ export default [
       },
     },
   },
-  {
-    files: ['public/**/*.js'],
-    languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'script',
-      globals: {
-        ...globals.browser,
-      },
-    },
-  },
 ];

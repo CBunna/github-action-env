@@ -1,9 +1,14 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
 import express from 'express';
 import { connectToDatabase } from './db.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const FRONTEND_DIR = path.join(__dirname, '../frontend');
+
 const app = express();
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(FRONTEND_DIR));
 
 // DB connection health-check endpoint
 app.get('/health', async (req, res) => {

@@ -4,11 +4,26 @@ This is a brand new, lightweight Node.js Express application connected to MongoD
 
 ## Project Structure
 
-- `server.js` - Express API server with endpoints for `/health`, `GET /products`, and `POST /products`.
-- `db.js` - MongoDB connection setup. It supports reading connection settings dynamically from environment variables.
-- `server.test.js` - Integration tests verifying the API against a real database.
-- `.github/workflows/ci.yml` - CI workflow demonstrating MongoDB service containers.
-- `.github/workflows/deployment.yml` - Deployment workflow demonstrating testing against MongoDB Atlas (via secrets), local server verify health checks, and build artifact publishing.
+```
+.
+├── backend/                 # Express API server
+│   ├── server.js            # Endpoints for /health, GET /products, POST /products
+│   ├── db.js                # MongoDB connection setup (reads env vars dynamically)
+│   ├── server.test.js       # Integration tests verifying the API against a real database
+│   ├── package.json
+│   └── .env                 # Local-only env vars (gitignored)
+├── frontend/                 # Static frontend served by the backend
+│   ├── index.html
+│   ├── app.js
+│   └── style.css
+├── Dockerfile                # Single image: builds backend, copies frontend alongside it
+├── docker-compose.yaml       # App + MongoDB service
+└── .github/workflows/
+    ├── deployment.yml        # Test → build → deploy pipeline (MongoDB Atlas secrets, health check)
+    └── matrix.yaml            # Matrix build demo across Node versions/OS
+```
+
+The backend serves the frontend as static files: `server.js` resolves `../frontend` relative to its own location (`__dirname`), so this works identically whether you run `npm start` from `backend/` locally or inside the Docker image, where `frontend/` is copied in as a sibling of `backend/`.
 
 ---
 
@@ -30,13 +45,14 @@ This application reads the following variables from `process.env`:
 ## Local Development Practice
 
 ### 1. Install Dependencies
-Run the following command in this directory to install Express, MongoDB, Vitest, and Supertest:
+Run the following command in the `backend/` directory to install Express, MongoDB, Vitest, and Supertest:
 ```bash
+cd backend
 npm install
 ```
 
 ### 2. Configure Local Environment Variables
-Create a file named `.env` in this directory:
+Create a file named `.env` in `backend/`:
 ```env
 PORT=3000
 MONGODB_URI=mongodb://localhost:27017/practice-db
@@ -45,14 +61,22 @@ MONGODB_URI=mongodb://localhost:27017/practice-db
 
 ### 3. Run the App
 ```bash
+cd backend
 npm start
 ```
 
 ### 4. Run the Tests
-Ensure you have a MongoDB instance running locally, then execute:
+Ensure you have a MongoDB instance running locally, then execute (from `backend/`):
 ```bash
 npm test
 ```
+
+### 5. Run with Docker
+From the repository root (build context needs both `backend/` and `frontend/`):
+```bash
+docker compose up --build
+```
+This builds a single image containing the backend and frontend, and starts a MongoDB container alongside it.
 
 ---
 
@@ -94,6 +118,7 @@ To simulate connecting to an external database like MongoDB Atlas:
 Inside [.github/workflows/deployment.yml](file:///.github/workflows/deployment.yml), we also run a step to verify the server and database connection health before compiling build artifacts:
 ```yaml
             - name: Verify Server and DB Health
+              working-directory: backend
               run: |
                   node server.js &
                   sleep 5

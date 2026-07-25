@@ -1,0 +1,57 @@
+name: CI/CD Pipeline
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+        branches:
+            - main
+
+env:
+    MONGODB_DB_NAME: practice-db
+    MONGODB_USERNAME: ${{ secrets.MONGODB_USERNAME }}
+    MONGODB_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
+    MONGODB_CLUSTER_ADDRESS: ${{ secrets.MONGODB_CLUSTER_ADDRESS }}
+    REGISTRY: ghcr.io
+    IMAGE_NAME: ${{github.repository}}
+
+jobs:
+    # STAGE 1: Lint & Integration Testing
+    test:
+        runs-on: ubuntu-latest
+        # Define the mongodb service that will be used for the test job
+        # When GitHub Actions runs your pipeline, it starts inside a fresh, completely empty virtual machine with no database installed. Without the services: mongodb block, running npm test in CI would instantly crash with a connection error: ECONNREFUSED 127.0.0.1:27017.
+        services:
+            mongodb:
+                image: mongo:6.0
+                ports:
+                    - 27017:27017
+                # Wait for the MongoDB service to be healthy before allowing other steps to run.
+                options: >-
+                    --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+        steps:
+            # checkout is an action that downloads the latest version of the GitHub Actions checkout action to your runner
+            - name: Checkout code
+              uses: actions/checkout@v4
+            #checkout@v4 downloads the latest version of the GitHub Actions checkout action to your runner
+            - name: Set Node.js Version
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 18
+                  cache: "npm" # We set this to cache the node_modules directory so that we don't have to install dependencies every time we run the pipeline
+                  cache-dependency-path: ./backend/package-lock.json # This tells the cache action to use the package-lock.json file to determine when to invalidate the cache. If the package-lock.json file changes, the cache will be invalidated and the dependencies will be reinstalled.
+
+            - name: Install dependencies
+              run: npm ci # This will install the dependencies for the backend
+              working-directory: ./backend
+
+            - name: Run ESLint
+              run: npm run lint
+              working-directory: ./backend
+
+            - name: Run Integration tests
+              run: npm test
+              working-directory: ./backend
