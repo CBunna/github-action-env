@@ -130,4 +130,4 @@ jobs:
             - name: Smoke Check Health Endpoint
               run: |
                   sleep 15  # Wait for Railway to start the service
-                  curl --retry 5 --retry-delay 5 --fail https://your-app.up.railway.app/health
+                  curl --retry 5 --retry-delay 5 --fail https://github-action-env-production.up.railway.app/health
