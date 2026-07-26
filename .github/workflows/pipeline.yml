@@ -97,7 +97,7 @@ jobs:
                   images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
                   tags: |
                       type=sha,prefix=
-                      type=raw,value={{date +%Y%m%d}}
+                      type=raw,value={{date 'YYYYMMDD'}}
                       type=raw,value=latest
 
             - name: Build and push Docker image
