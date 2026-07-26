@@ -76,7 +76,7 @@ jobs:
 
         steps:
             - name: Checkout code
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
 
               # Set up Docker Buildx: This action creates a multi-architecture Docker build environment.
             - name: Set up Docker Buildx
@@ -95,8 +95,10 @@ jobs:
               uses: docker/metadata-action@v4
               with:
                   images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-                  tags: type=sha, prefix=
+                  tags: |
+                      type=sha,prefix=
                       type=raw,value={{date +%Y%m%d}}
+                      type=raw,value=latest
 
             - name: Build and push Docker image
               uses: docker/build-push-action@v5
@@ -118,15 +120,14 @@ jobs:
         environment: production
 
         steps:
-            - name: Deploy to Target Cloud Platform
-              run: |
-                  echo "Deploying image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image_tag }}"
-                  # Insert target platform deployment command here (e.g., AWS ECS / Cloud Run / Render / Fly.io)
-                  # Make sure runtime env vars are passed:
-                  # MONGODB_USERNAME, MONGODB_PASSWORD, MONGODB_CLUSTER_ADDRESS, MONGODB_DB_NAME, PORT=3000
-
+            - name: Install Railway CLI
+              run: npm i -g @railway/cli
+              # This redeploys the image already pushed to GHCR by build-and-push instead of rebuilding from source.
+            - name: Redeploy on Railway
+              run: railway redeploy -y --service ${{ secrets.RAILWAY_SERVICE_ID }}
+              env:
+                  RAILWAY_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
             - name: Smoke Check Health Endpoint
               run: |
-                  echo "Verifying application status..."
-                  # Replace APP_URL with your actual staging/prod URL
-                  # curl --retry 5 --retry-delay 5 --fail https://your-app.com/health
+                  sleep 15  # Wait for Railway to start the service
+                  curl --retry 5 --retry-delay 5 --fail https://your-app.up.railway.app/health
