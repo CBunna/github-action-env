@@ -19,6 +19,9 @@ jobs:
     # STAGE 1: Lint & Integration Testing
     test:
         runs-on: ubuntu-latest
+        # Overrides the workflow-level Atlas vars so db.js connects to the local service container below instead of real Atlas.
+        env:
+            MONGODB_URI: mongodb://127.0.0.1:27017/practice-db
         # Define the mongodb service that will be used for the test job
         # When GitHub Actions runs your pipeline, it starts inside a fresh, completely empty virtual machine with no database installed. Without the services: mongodb block, running npm test in CI would instantly crash with a connection error: ECONNREFUSED 127.0.0.1:27017.
         services:
